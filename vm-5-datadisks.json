@@ -1,0 +1,375 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.1",
+  "parameters": {
+    "vnetID": {
+      "type":"string"
+    },
+    "resourceAPIVersion":{
+      "type":"string"
+    },
+    "dnsNamePrefix": {
+      "type": "string"
+    },
+    "scriptsUri": {
+      "type": "string"
+    },
+    "storageAccount": {
+      "type": "object"
+    },
+    "vmCount": {
+      "type": "int"
+    },
+    "vmSpec": {
+      "type": "secureobject"
+    },
+    "networkSpec": {
+      "type": "object"
+    },
+    "clusterSpec": {
+      "type": "object"
+    }
+  },
+  "variables": {
+    "singleQuote": "'",
+    "masterIP":"[parameters('networkSpec').masterIP]",
+    "workerIP":"[parameters('networkSpec').workerIP]",
+    "vmName": "[concat(parameters('dnsNamePrefix'), '-dn')]",
+    "nicName": "[concat(variables('vmName'), '-nic')]",
+    "storageAccountName": "[parameters('storageAccount').prefix]",
+    "publicIPAddressName": "[concat(variables('vmName'), '-publicIP')]",
+    "securityGroupName": "[concat(parameters('dnsNamePrefix'), '-dn-sg')]",
+	"localResourceAPIVersion" : "2016-04-30-preview",
+	"datadisk0Name":"[concat(uniqueString(concat('datadisk0', 'dn', resourceGroup().id)),'-dn0')]",
+	"datadisk1Name":"[concat(uniqueString(concat('datadisk1', 'dn', resourceGroup().id)),'-dn1')]",
+	"datadisk2Name":"[concat(uniqueString(concat('datadisk2', 'dn', resourceGroup().id)),'-dn2')]",
+	"datadisk3Name":"[concat(uniqueString(concat('datadisk3', 'dn', resourceGroup().id)),'-dn3')]",
+	"datadisk4Name":"[concat(uniqueString(concat('datadisk4', 'dn', resourceGroup().id)),'-dn4')]",
+	"datadisk5Name":"[concat(uniqueString(concat('datadisk5', 'dn', resourceGroup().id)),'-dn5')]"
+  },
+  "resources": [
+    {
+      "apiVersion": "[parameters('resourceAPIVersion')]",
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "name": "[variables('securityGroupName')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "SSH",
+            "properties": {
+              "description": "Allows SSH traffic",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "22",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 100,
+              "direction": "Inbound"
+            }
+          }
+        ]
+      }
+    },
+	{
+		"type": "Microsoft.Compute/disks",
+		"name": "[concat(copyIndex(),variables('datadisk0Name'))]",
+		"apiVersion": "[variables('localResourceAPIVersion')]",
+		"location": "[resourceGroup().location]",
+		"properties": {
+			"accountType": "[parameters('storageAccount').type]",
+			"creationData": {
+				"createOption": "Empty"
+			},
+			"diskSizeGB": 1023
+		},
+		"copy": {
+			"name": "diskNode",
+			"count": "[parameters('vmCount')]"
+        },
+		"dependsOn": []
+	},
+	{
+		"type": "Microsoft.Compute/disks",
+		"name": "[concat(copyIndex(),variables('datadisk1Name'))]",
+		"apiVersion": "[variables('localResourceAPIVersion')]",
+		"location": "[resourceGroup().location]",
+		"properties": {
+			"accountType": "[parameters('storageAccount').type]",
+			"creationData": {
+				"createOption": "Empty"
+			},
+			"diskSizeGB": 1023
+		},
+		"copy": {
+			"name": "diskNode",
+			"count": "[parameters('vmCount')]"
+        },
+		"dependsOn": []
+	},
+	{
+		"type": "Microsoft.Compute/disks",
+		"name": "[concat(copyIndex(),variables('datadisk2Name'))]",
+		"apiVersion": "[variables('localResourceAPIVersion')]",
+		"location": "[resourceGroup().location]",
+		"properties": {
+			"accountType": "[parameters('storageAccount').type]",
+			"creationData": {
+				"createOption": "Empty"
+			},
+			"diskSizeGB": 1023
+		},
+		"copy": {
+			"name": "diskNode",
+			"count": "[parameters('vmCount')]"
+        },
+		
+		"dependsOn": []
+	},
+	{
+		"type": "Microsoft.Compute/disks",
+		"name": "[concat(copyIndex(),variables('datadisk3Name'))]",
+		"apiVersion": "[variables('localResourceAPIVersion')]",
+		"location": "[resourceGroup().location]",
+		"properties": {
+			"accountType": "[parameters('storageAccount').type]",
+			"creationData": {
+				"createOption": "Empty"
+			},
+			"diskSizeGB": 1023
+		},
+		"copy": {
+			"name": "diskNode",
+			"count": "[parameters('vmCount')]"
+        },
+		"dependsOn": []
+	},
+	{
+		"type": "Microsoft.Compute/disks",
+		"name": "[concat(copyIndex(),variables('datadisk4Name'))]",
+		"apiVersion": "[variables('localResourceAPIVersion')]",
+		"location": "[resourceGroup().location]",
+		"properties": {
+			"accountType": "[parameters('storageAccount').type]",
+			"creationData": {
+				"createOption": "Empty"
+			},
+			"diskSizeGB": 1023
+		},
+		"copy": {
+			"name": "diskNode",
+			"count": "[parameters('vmCount')]"
+        },
+		"dependsOn": []
+	},
+	{
+		"type": "Microsoft.Compute/disks",
+		"name": "[concat(copyIndex(),variables('datadisk5Name'))]",
+		"apiVersion": "[variables('localResourceAPIVersion')]",
+		"location": "[resourceGroup().location]",
+		"properties": {
+			"accountType": "[parameters('storageAccount').type]",
+			"creationData": {
+				"createOption": "Empty"
+			},
+			"diskSizeGB": 1023
+		},
+		"copy": {
+			"name": "diskNode",
+			"count": "[parameters('vmCount')]"
+        },
+		"dependsOn": []
+	},
+    {
+      "apiVersion": "[parameters('resourceAPIVersion')]",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[concat(variables('publicIPAddressName'), copyIndex())]",
+      "location": "[resourceGroup().location]",
+      "copy": {
+        "name": "publicIPLoop",
+        "count": "[parameters('vmCount')]"
+      },
+      "properties": {
+        "publicIPAllocationMethod": "Dynamic",
+        "dnsSettings": {
+          "domainNameLabel": "[concat(parameters('dnsNamePrefix'), '-dn', copyIndex())]"
+        }
+      }
+    },
+    {
+      "apiVersion": "[parameters('resourceAPIVersion')]",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[concat(variables('nicName'), copyIndex())]",
+      "location": "[resourceGroup().location]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'), copyIndex())]",
+        "[concat('Microsoft.Network/networkSecurityGroups/', variables('securityGroupName'))]"
+      ],
+      "copy": {
+        "name": "dataNodeNicLoop",
+        "count": "[parameters('vmCount')]"
+      },
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Static",
+              "privateIPAddress": "[concat(parameters('networkSpec').ipOctet01, add(parameters('networkSpec').ipOctet2, div(copyIndex(parameters('networkSpec').datanodeIpOctet3), 256)), '.', mod(copyIndex(parameters('networkSpec').datanodeIpOctet3), 256))]",
+              "subnet": {
+                "id": "[concat(parameters('vnetID'), '/subnets/', parameters('networkSpec').virtualNetworkSubnetName)]"
+              },
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses',concat(variables('publicIPAddressName'), copyIndex()))]"
+              }
+            }
+          }
+        ],
+        "networkSecurityGroup": {
+          "id": "[resourceId('Microsoft.Network/networkSecurityGroups', variables('securityGroupName'))]"
+        }
+      }
+    },
+    {
+      "apiVersion": "[variables('localResourceAPIVersion')]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[concat(variables('vmName'), copyIndex())]",
+      "plan": "[parameters('vmSpec').imageInfo.plan]",
+      "location": "[resourceGroup().location]",
+      "copy": {
+        "name": "dataNodeNicLoop",
+        "count": "[parameters('vmCount')]"
+      },
+      "dependsOn": [
+        "[concat('Microsoft.Network/networkInterfaces/', variables('nicName'), copyIndex())]",
+		"[resourceId('Microsoft.Compute/disks', concat(copyIndex(),variables('datadisk0Name')))]",
+		"[resourceId('Microsoft.Compute/disks', concat(copyIndex(),variables('datadisk1Name')))]",
+		"[resourceId('Microsoft.Compute/disks', concat(copyIndex(),variables('datadisk2Name')))]",
+		"[resourceId('Microsoft.Compute/disks', concat(copyIndex(),variables('datadisk3Name')))]",
+		"[resourceId('Microsoft.Compute/disks', concat(copyIndex(),variables('datadisk4Name')))]",
+		"[resourceId('Microsoft.Compute/disks', concat(copyIndex(),variables('datadisk5Name')))]"
+      ],
+      "properties": {
+        "availabilitySet": {
+          "id": "[resourceId('Microsoft.Compute/availabilitySets', parameters('vmSpec').dataNodeASName)]"
+        },
+        "hardwareProfile": {
+          "vmSize": "[parameters('vmSpec').vmSize]"
+        },
+        "osProfile": {
+          "computerName": "[reference(concat(variables('publicIPAddressName'), copyIndex())).dnsSettings.fqdn]",
+          "adminUsername": "[parameters('vmSpec').adminUserName]",
+          "adminPassword": "[parameters('vmSpec').adminPassword]",
+          "linuxConfiguration": {
+            "disablePasswordAuthentication": "false"
+          }
+        },
+        "storageProfile": {
+		  "imageReference": "[parameters('vmSpec').imageInfo.imageReference]",
+          "osDisk": {
+            "name": "[concat(copyIndex(),uniqueString(concat('osDisk', 'dn', resourceGroup().id)),'-dn-osDisk')]",
+			"createOption": "FromImage",
+			"caching": "ReadWrite",
+			"diskSizeGB": 50
+          },
+          "dataDisks": [
+            {
+				"diskSizeGB": 1023,
+				"lun": 0,
+				"createOption": "Attach",
+				"caching": "None",
+				"managedDisk": {
+						"storageAccountType": "[parameters('storageAccount').type]",
+						"id": "[resourceId('Microsoft.Compute/disks', concat(copyIndex(),variables('datadisk0Name')))]"
+					}
+            },
+            {
+				"diskSizeGB": 1023,
+				"lun": 1,
+				"createOption": "Attach",
+				"caching": "None",
+				"managedDisk": {
+					"storageAccountType": "[parameters('storageAccount').type]",
+					"id": "[resourceId('Microsoft.Compute/disks', concat(copyIndex(),variables('datadisk1Name')))]"
+					}
+            },
+            {
+				"diskSizeGB": 1023,
+				"lun": 2,
+				"createOption": "Attach",
+				"caching": "None",
+				"managedDisk": {
+					"storageAccountType": "[parameters('storageAccount').type]",
+					"id": "[resourceId('Microsoft.Compute/disks', concat(copyIndex(),variables('datadisk2Name')))]"
+				}
+            },
+            {
+				"diskSizeGB": 1023,
+				"lun": 3,
+				"createOption": "Attach",
+				"caching": "None",
+				"managedDisk": {
+					"storageAccountType": "[parameters('storageAccount').type]",
+					"id": "[resourceId('Microsoft.Compute/disks', concat(copyIndex(),variables('datadisk3Name')))]"
+				}
+            },
+            {
+              "diskSizeGB": 1023,
+              "lun": 4,
+              "createOption": "Attach",
+			  "caching": "None",
+			  "managedDisk": {
+					"storageAccountType": "[parameters('storageAccount').type]",
+					"id": "[resourceId('Microsoft.Compute/disks', concat(copyIndex(),variables('datadisk4Name')))]"
+				}
+            },
+            {
+              "diskSizeGB": 1023,
+              "lun": 5,
+              "createOption": "Attach",
+				"caching": "None",
+				"managedDisk": {
+					"storageAccountType": "[parameters('storageAccount').type]",
+					"id": "[resourceId('Microsoft.Compute/disks', concat(copyIndex(),variables('datadisk5Name')))]"
+				}
+            }
+          ]
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces',concat(variables('nicName'), copyIndex()))]"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(variables('vmName'), copyIndex(), '/prepareDisks')]",
+      "apiVersion": "[parameters('resourceAPIVersion')]",
+      "location": "[resourceGroup().location]",
+      "copy": {
+        "name": "dataNodeNicLoop",
+        "count": "[parameters('vmCount')]"
+      },
+      "dependsOn": [
+        "[concat('Microsoft.Compute/virtualMachines/', variables('vmName'), copyIndex())]"
+      ],
+      "properties": {
+        "publisher": "Microsoft.Azure.Extensions",
+        "type": "CustomScript",
+        "typeHandlerVersion": "2.0",
+        "autoUpgradeMinorVersion": true,
+        "settings": {
+          "fileUris": [
+            "[concat(parameters('scriptsUri'), '/scripts/prepare-datanode-disks.sh')]",
+            "[concat(parameters('scriptsUri'), '/scripts/initialize-node.sh')]"
+          ],
+          "commandToExecute": "[concat('sh initialize-node.sh ', variables('singleQuote'), variables('masterIP'), variables('singleQuote'), ' ', variables('singleQuote'), variables('workerIP'), variables('singleQuote'), ' ', variables('singleQuote'), parameters('dnsNamePrefix'), variables('singleQuote'), ' ', variables('singleQuote'), reference(concat(variables('publicIPAddressName'), copyIndex())).dnsSettings.fqdn, variables('singleQuote'), ' ', variables('singleQuote'), parameters('clusterSpec').masterNodeCount, variables('singleQuote'), ' ', variables('singleQuote'), parameters('clusterSpec').dataNodeCount, variables('singleQuote'), ' ', variables('singleQuote'), parameters('vmSpec').adminUserName, variables('singleQuote'), ' ', 'datanode', ' >> /var/log/cloudera-azure-initialize.log 2>&1')]"
+        }
+      }
+    }
+  ]
+}
