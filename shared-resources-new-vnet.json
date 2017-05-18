@@ -29,7 +29,8 @@
                 "name": "Aligned"
             },
 	   "properties": {
-			
+			"platformUpdateDomainCount": 5,
+			"platformFaultDomainCount": 2
 		  },
       "name": "[parameters('masterNodeASName')]",
       "location": "[resourceGroup().location]"
@@ -42,7 +43,7 @@
             },
 	  "properties": {
 			"platformUpdateDomainCount": 5,
-			"platformFaultDomainCount": 3
+			"platformFaultDomainCount": 2
 		  },
       "name": "[parameters('dataNodeASName')]",
       "location": "[resourceGroup().location]"
@@ -54,7 +55,8 @@
                 "name": "Aligned"
             },
 	  "properties": {
-			
+			"platformUpdateDomainCount": 5,
+			"platformFaultDomainCount": 2
 		  },
       "name": "[parameters('edgeASName')]",
       "location": "[resourceGroup().location]"
