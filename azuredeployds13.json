@@ -306,7 +306,8 @@
       "adminUserName": "[parameters('adminUserName')]",
       "adminPassword": "[parameters('adminPassword')]",
       "masterNodeASName": "[concat(parameters('dnsNamePrefix'), '-mnAS')]",
-      "dataNodeASName": "[concat(parameters('dnsNamePrefix'), '-dnAS')]"
+      "dataNodeASName": "[concat(parameters('dnsNamePrefix'), '-dnAS')]",
+	  "edgeASName": "[concat(parameters('dnsNamePrefix'), '-egAS')]"
     },
     "networkSpec": {
       "addressPrefix": "[variables('addressPrefix')]",
@@ -349,6 +350,9 @@
           },
           "dataNodeASName": {
             "value": "[variables('vmSpec').dataNodeASName]"
+          },
+		   "edgeASName": {
+            "value": "[variables('vmSpec').edgeASName]"
           }
         }
       }
