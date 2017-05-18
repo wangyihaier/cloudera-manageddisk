@@ -29,8 +29,7 @@
                 "name": "Aligned"
             },
 	  "properties": {
-			"platformUpdateDomainCount": 5,
-			"platformFaultDomainCount": 2
+			
 		  },
       "name": "[parameters('masterNodeASName')]",
       "location": "[resourceGroup().location]"
