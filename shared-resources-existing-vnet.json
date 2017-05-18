@@ -41,8 +41,7 @@
                 "name": "Aligned"
             },
 	  "properties": {
-			"platformUpdateDomainCount": 5,
-			"platformFaultDomainCount": 2
+			
 		  },
       "name": "[parameters('dataNodeASName')]",
       "location": "[resourceGroup().location]"
