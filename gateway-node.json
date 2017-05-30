@@ -1,0 +1,195 @@
+{
+ "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "dnsNamePrefix": {
+      "type": "string"
+    },
+    "region": {
+      "type": "string"
+    },
+    "scriptsUri": {
+      "type": "string"
+    },
+    "storageAccount": {
+      "type": "object"
+    },
+    "vmCount": {
+      "type": "int"
+    },
+    "vmSpec": {
+      "type": "object"
+    },
+    "networkSpec": {
+      "type": "object"
+    },
+	"resourceAPIVersion":{
+      "type":"string"
+    }
+  },
+  "variables": {
+    "vmName": "[concat(parameters('dnsNamePrefix'), '-gw')]",
+    "nicName": "[concat(variables('vmName'), '-nic')]",
+    "publicIPAddressName": "[concat(variables('vmName'), '-publicIP')]",
+    "storageAccountName": "[concat('gw', parameters('storageAccount').prefix)]",
+	"localResourceAPIVersion" : "2016-04-30-preview",
+	"datadisk0Name":"[concat(uniqueString(concat('datadisk0', 'gw', resourceGroup().id)),'-gw0')]"
+  },
+  "resources": [
+	{
+		"type": "Microsoft.Compute/disks",
+		"name": "[concat(copyIndex(),variables('datadisk0Name'))]",
+		"apiVersion": "[variables('localResourceAPIVersion')]",
+		"location": "[resourceGroup().location]",
+		"properties": {
+			"accountType": "[parameters('storageAccount').type]",
+			"creationData": {
+				"createOption": "Empty"
+			},
+			"diskSizeGB": 1023
+		},
+		"copy": {
+			"name": "diskNode",
+			"count": "[parameters('vmCount')]"
+        },
+		"dependsOn": []
+	},
+    {
+      "apiVersion": "[parameters('resourceAPIVersion')]",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[concat(variables('publicIPAddressName'), copyIndex())]",
+      "location": "[parameters('region')]",
+      "copy": {
+        "name": "publicIPLoop",
+        "count": "[parameters('vmCount')]"
+      },
+      "properties": {
+        "publicIPAllocationMethod": "Dynamic",
+        "dnsSettings": {
+          "domainNameLabel": "[concat(parameters('dnsNamePrefix'), '-gw', copyIndex())]"
+        }
+      }
+    },
+    {
+      "apiVersion": "[parameters('resourceAPIVersion')]",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[concat(variables('nicName'), copyIndex())]",
+      "location": "[parameters('region')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'), copyIndex())]"
+      ],
+      "copy": {
+        "name": "gatewayNodeNicLoop",
+        "count": "[parameters('vmCount')]"
+      },
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Static",
+              "privateIPAddress": "[concat(parameters('networkSpec').privateIPPrefix, copyIndex(parameters('networkSpec').gatewayNodeAddressStart))]",
+              "subnet": {
+                "id": "[concat(parameters('networkSpec').VnetID, '/subnets/', parameters('networkSpec').virtualNetworkSubnetName)]"
+              },
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses',concat(variables('publicIPAddressName'), copyIndex()))]"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "[variables('localResourceAPIVersion')]",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[concat(variables('vmName'), copyIndex())]",
+      "plan": {
+        "name": "cloudera-centos-6",
+        "publisher": "cloudera",
+        "product": "cloudera-centos-6"
+      },
+      "location": "[parameters('region')]",
+      "copy": {
+        "name": "gatewayNodeNicLoop",
+        "count": "[parameters('vmCount')]"
+      },
+      "dependsOn": [
+        "[concat('Microsoft.Network/networkInterfaces/', variables('nicName'), copyIndex())]",
+        "[resourceId('Microsoft.Compute/disks', concat(copyIndex(),variables('datadisk0Name')))]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[parameters('vmSpec').vmSize]"
+        },
+        "osProfile": {
+          "computername": "[reference(concat(variables('publicIPAddressName'), copyIndex())).dnsSettings.fqdn]",
+          "adminUsername": "[parameters('vmSpec').adminUserName]",
+          "adminPassword": "[parameters('vmSpec').adminPassword]",
+          "linuxConfiguration": {
+            "disablePasswordAuthentication": "false"
+          }
+        },
+        "storageProfile": {
+		  "imageReference": "[parameters('vmSpec').imageInfo.imageReference]",
+          "osDisk": {
+            "name": "[concat(copyIndex(),uniqueString(concat('osDisk', 'gw', resourceGroup().id)),'-gw-osDisk')]",
+			"createOption": "FromImage",
+			"caching": "ReadWrite",
+			"diskSizeGB": 50
+          },
+          "dataDisks": [
+            {
+				"diskSizeGB": 1023,
+				"lun": 0,
+				"createOption": "Attach",
+				"caching": "None",
+				"managedDisk": {
+						"storageAccountType": "[parameters('storageAccount').type]",
+						"id": "[resourceId('Microsoft.Compute/disks', concat(copyIndex(),variables('datadisk0Name')))]"
+					}
+            }
+          ]
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces',concat(variables('nicName'), copyIndex()))]"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "type": "Microsoft.Compute/virtualMachines/extensions",
+      "name": "[concat(variables('vmName'), copyIndex(), '/prepareDisks')]",
+      "apiVersion": "[parameters('resourceAPIVersion')]",
+      "location": "[parameters('region')]",
+      "copy": {
+        "name": "nameNodeNicLoop",
+        "count": "[parameters('vmCount')]"
+      },
+      "dependsOn": [
+        "[concat('Microsoft.Compute/virtualMachines/', variables('vmName'), copyIndex())]"
+      ],
+      "properties": {
+        "publisher": "Microsoft.OSTCExtensions",
+        "type": "CustomScriptForLinux",
+        "typeHandlerVersion": "1.2",
+        "settings": {
+          "fileUris": [
+            "[concat(parameters('scriptsUri'), '/scripts/prepare-gateway-disks.sh')]",
+            "[concat(parameters('scriptsUri'), '/scripts/initialize-node.sh')]"
+          ],
+          "commandToExecute": "[concat('sh initialize-node.sh \"', parameters('vmSpec').adminUserName, '\" ', 'gateway', ' \"', concat(variables('vmName'), copyIndex(),parameters('vmSpec').dnsNameSuffix), '\" \"', parameters('vmSpec').dns1IP, '\" \"', parameters('vmSpec').dns2IP, '\" \"', parameters('vmSpec').dns1Name, '\" \"', parameters('vmSpec').dns2Name, '\" \"', parameters('vmSpec').hadoopAdmin, '\" \"', parameters('vmSpec').domainName, '\" >> /home/$ADMINUSER/initialize-gatewaynode.log 2>&1')]"
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "fqdn": {
+      "type": "string",
+      "value": "[reference(concat(variables('publicIPAddressName'), '0')).dnsSettings.fqdn]"
+    }
+  }
+}
