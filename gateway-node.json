@@ -2,10 +2,13 @@
  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
   "contentVersion": "1.0.0.0",
   "parameters": {
-    "dnsNamePrefix": {
-      "type": "string"
+    "vnetID": {
+      "type":"string"
     },
-    "region": {
+    "resourceAPIVersion":{
+      "type":"string"
+    },
+    "dnsNamePrefix": {
       "type": "string"
     },
     "scriptsUri": {
@@ -18,13 +21,13 @@
       "type": "int"
     },
     "vmSpec": {
-      "type": "object"
+      "type": "secureobject"
     },
     "networkSpec": {
       "type": "object"
     },
-	"resourceAPIVersion":{
-      "type":"string"
+    "clusterSpec": {
+      "type": "object"
     }
   },
   "variables": {
@@ -36,6 +39,30 @@
 	"datadisk0Name":"[concat(uniqueString(concat('datadisk0', 'gw', resourceGroup().id)),'-gw0')]"
   },
   "resources": [
+     {
+      "apiVersion": "[parameters('resourceAPIVersion')]",
+      "type": "Microsoft.Network/networkSecurityGroups",
+      "name": "[variables('securityGroupName')]",
+      "location": "[resourceGroup().location]",
+      "properties": {
+        "securityRules": [
+          {
+            "name": "SSH",
+            "properties": {
+              "description": "Allows SSH traffic",
+              "protocol": "Tcp",
+              "sourcePortRange": "*",
+              "destinationPortRange": "22",
+              "sourceAddressPrefix": "*",
+              "destinationAddressPrefix": "*",
+              "access": "Allow",
+              "priority": 100,
+              "direction": "Inbound"
+            }
+          }
+        ]
+      }
+    },
 	{
 		"type": "Microsoft.Compute/disks",
 		"name": "[concat(copyIndex(),variables('datadisk0Name'))]",
@@ -104,12 +131,8 @@
       "apiVersion": "[variables('localResourceAPIVersion')]",
       "type": "Microsoft.Compute/virtualMachines",
       "name": "[concat(variables('vmName'), copyIndex())]",
-      "plan": {
-        "name": "cloudera-centos-6",
-        "publisher": "cloudera",
-        "product": "cloudera-centos-6"
-      },
-      "location": "[parameters('region')]",
+      "plan": "[parameters('vmSpec').imageInfo.plan]",
+      "location": "[resourceGroup().location]",
       "copy": {
         "name": "gatewayNodeNicLoop",
         "count": "[parameters('vmCount')]"
@@ -119,6 +142,9 @@
         "[resourceId('Microsoft.Compute/disks', concat(copyIndex(),variables('datadisk0Name')))]"
       ],
       "properties": {
+	   "availabilitySet": {
+          "id": "[resourceId('Microsoft.Compute/availabilitySets', parameters('vmSpec').edgeASName)]"
+        },
         "hardwareProfile": {
           "vmSize": "[parameters('vmSpec').vmSize]"
         },
@@ -181,7 +207,7 @@
             "[concat(parameters('scriptsUri'), '/scripts/prepare-gateway-disks.sh')]",
             "[concat(parameters('scriptsUri'), '/scripts/initialize-node.sh')]"
           ],
-          "commandToExecute": "[concat('sh initialize-node.sh \"', parameters('vmSpec').adminUserName, '\" ', 'gateway', ' \"', concat(variables('vmName'), copyIndex(),parameters('vmSpec').dnsNameSuffix), '\" \"', parameters('vmSpec').dns1IP, '\" \"', parameters('vmSpec').dns2IP, '\" \"', parameters('vmSpec').dns1Name, '\" \"', parameters('vmSpec').dns2Name, '\" \"', parameters('vmSpec').hadoopAdmin, '\" \"', parameters('vmSpec').domainName, '\" >> /home/$ADMINUSER/initialize-gatewaynode.log 2>&1')]"
+         "commandToExecute": "[concat('sh initialize-node.sh ', variables('singleQuote'), variables('masterIP'), variables('singleQuote'), ' ', variables('singleQuote'), variables('workerIP'), variables('singleQuote'), ' ', variables('singleQuote'), parameters('dnsNamePrefix'), variables('singleQuote'), ' ', variables('singleQuote'), reference(concat(variables('publicIPAddressName'), copyIndex())).dnsSettings.fqdn, variables('singleQuote'), ' ', variables('singleQuote'), parameters('clusterSpec').masterNodeCount, variables('singleQuote'), ' ', variables('singleQuote'), parameters('clusterSpec').dataNodeCount, variables('singleQuote'), ' ', variables('singleQuote'), parameters('vmSpec').adminUserName, variables('singleQuote'), ' ', 'datanode', ' >> /var/log/cloudera-azure-initialize.log 2>&1')]"
         }
       }
     }
