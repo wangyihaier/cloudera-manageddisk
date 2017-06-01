@@ -12,6 +12,8 @@ Once the trial has concluded, the Cloudera Enterprise features will be disabled 
     <img src="http://azuredeploy.net/deploybutton.png" />
 </a> 
 
+# Gateway Server Deployment
+<a href="https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fwangyihaier%2Fcloudera-manageddisk%2Fpvnet%2Fazuredeploy_gateway.json" target="_blank">Deploy Gateway Server</a>
 
 Version 2016-05-26
 
