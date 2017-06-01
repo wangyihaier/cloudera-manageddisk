@@ -338,27 +338,33 @@
           "uri": "[concat(variables('scriptsUri'), '/gateway-node.json')]",
           "contentVersion": "1.0.0.0"
         },
-        "parameters": {
+       "parameters": {
+          "vnetID":{
+            "value":"[variables('VNetId')]"
+          },
+          "resourceAPIVersion":{
+            "value":"[variables('resourceAPIVersion')]"
+          },
           "dnsNamePrefix": {
             "value": "[parameters('dnsNamePrefix')]"
-          },
-          "region": {
-            "value": "[parameters('region')]"
           },
           "scriptsUri": {
             "value": "[variables('scriptsUri')]"
           },
           "storageAccount": {
-            "value": "[variables('storageAccount')]"
+            "value": "[variables('masterStorageAccount')]"
           },
           "vmCount": {
-            "value": "[parameters('numberOfNodes')]"
+            "value": "[variables('clusterSpec').masterNodeCount]"
           },
           "vmSpec": {
             "value": "[variables('vmSpec')]"
           },
           "networkSpec": {
             "value": "[variables('networkSpec')]"
+          },
+          "clusterSpec": {
+            "value": "[variables('clusterSpec')]"
           }
         }
       }
