@@ -38,7 +38,9 @@
 	"localResourceAPIVersion" : "2016-04-30-preview",
 	"securityGroupName": "[concat(parameters('dnsNamePrefix'), '-dn-sg')]",
 	"datadisk0Name":"[concat(uniqueString(concat('datadisk0', 'gw', resourceGroup().id)),'-gw0')]",
-	"singleQuote": "'"
+	"singleQuote": "'",
+	"masterIP":"[parameters('networkSpec').masterIP]",
+    "workerIP":"[parameters('networkSpec').workerIP]"
   },
   "resources": [
      {
